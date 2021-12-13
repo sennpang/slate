@@ -215,7 +215,7 @@ export const withReact = <T extends Editor>(editor: T) => {
       const decoded = decodeURIComponent(window.atob(slateNodes))
       const parsed = JSON.parse(decoded) as Node[]
       Transforms.insertNodes(e, parsed)
-      return
+      return true
     }
 
     if (fragment) {
