@@ -160,6 +160,7 @@ export const Editable = (props: EditableProps) => {
   const state = useMemo(
     () => ({
       isDraggingInternally: false,
+      tripleClick: false,
       isUpdatingSelection: false,
       latestElement: null as DOMElement | null,
       hasMarkPlaceholder: false,
@@ -214,7 +215,7 @@ export const Editable = (props: EditableProps) => {
           isTargetInsideNonReadonlyVoid(editor, focusNode)
 
         if (anchorNodeSelectable && focusNodeSelectable) {
-          const range = ReactEditor.toSlateRange(editor, domSelection, {
+          let range = ReactEditor.toSlateRange(editor, domSelection, {
             exactMatch: false,
             suppressThrow: true,
           })
@@ -225,6 +226,10 @@ export const Editable = (props: EditableProps) => {
               !androidInputManager?.hasPendingChanges() &&
               !androidInputManager?.isFlushing()
             ) {
+              if (state.tripleClick) {
+                range = Editor.unhangRange(editor, range)
+              }
+
               Transforms.select(editor, range)
             } else {
               androidInputManager?.handleUserSelect(range)
@@ -974,7 +979,8 @@ export const Editable = (props: EditableProps) => {
                     return
                   }
 
-                  if (event.detail === TRIPLE_CLICK && path.length >= 1) {
+                  if (event.detail >= TRIPLE_CLICK && path.length >= 1) {
+                    state.tripleClick = true
                     let blockPath = path
                     if (!Editor.isBlock(editor, node)) {
                       const block = Editor.above(editor, {
@@ -1092,27 +1098,27 @@ export const Editable = (props: EditableProps) => {
 
                   setIsComposing(true)
 
-                  const { selection } = editor
-                  if (selection) {
-                    if (Range.isExpanded(selection)) {
-                      Editor.deleteFragment(editor)
-                      return
-                    }
-                    const inline = Editor.above(editor, {
-                      match: n => Editor.isInline(editor, n),
-                      mode: 'highest',
-                    })
-                    if (inline) {
-                      const [, inlinePath] = inline
-                      if (Editor.isEnd(editor, selection.anchor, inlinePath)) {
-                        const point = Editor.after(editor, inlinePath)!
-                        Transforms.setSelection(editor, {
-                          anchor: point,
-                          focus: point,
-                        })
-                      }
-                    }
-                  }
+                  // const { selection } = editor
+                  // if (selection) {
+                  //   if (Range.isExpanded(selection)) {
+                  //     Editor.deleteFragment(editor)
+                  //     return
+                  //   }
+                  //   const inline = Editor.above(editor, {
+                  //     match: n => Editor.isInline(editor, n),
+                  //     mode: 'highest',
+                  //   })
+                  //   if (inline) {
+                  //     const [, inlinePath] = inline
+                  //     if (Editor.isEnd(editor, selection.anchor, inlinePath)) {
+                  //       const point = Editor.after(editor, inlinePath)!
+                  //       Transforms.setSelection(editor, {
+                  //         anchor: point,
+                  //         focus: point,
+                  //       })
+                  //     }
+                  //   }
+                  // }
                 }
               },
               [attributes.onCompositionStart]
