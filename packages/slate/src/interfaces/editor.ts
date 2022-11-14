@@ -61,6 +61,7 @@ export interface BaseEditor {
   // Schema-specific node behaviors.
   isInline: (element: Element) => boolean
   isVoid: (element: Element) => boolean
+  markableVoid: (element: Element) => boolean
   normalizeNode: (entry: NodeEntry) => void
   onChange: () => void
 
@@ -357,8 +358,18 @@ export const Editor: EditorInterface = {
       match,
       reverse,
     })) {
-      if (!Text.isText(n) && !Path.equals(path, p)) {
-        return [n, p]
+      if (Text.isText(n)) return
+      if (Range.isRange(at)) {
+        if (
+          Path.isAncestor(p, at.anchor.path) &&
+          Path.isAncestor(p, at.focus.path)
+        ) {
+          return [n, p]
+        }
+      } else {
+        if (!Path.equals(path, p)) {
+          return [n, p]
+        }
       }
     }
   },
