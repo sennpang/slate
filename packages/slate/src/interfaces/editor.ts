@@ -816,16 +816,21 @@ export const Editor: EditorInterface = {
 
     if (anchor.offset === 0) {
       const prev = Editor.previous(editor, { at: path, match: Text.isText })
-      const block = Editor.above(editor, {
-        match: n => Editor.isBlock(editor, n),
+      const markedVoid = Editor.above(editor, {
+        match: n => Editor.isVoid(editor, n) && editor.markableVoid(n),
       })
+      if (!markedVoid) {
+        const block = Editor.above(editor, {
+          match: n => Editor.isBlock(editor, n),
+        })
 
-      if (prev && block) {
-        const [prevNode, prevPath] = prev
-        const [, blockPath] = block
+        if (prev && block) {
+          const [prevNode, prevPath] = prev
+          const [, blockPath] = block
 
-        if (Path.isAncestor(blockPath, prevPath)) {
-          node = prevNode as Text
+          if (Path.isAncestor(blockPath, prevPath)) {
+            node = prevNode as Text
+          }
         }
       }
     }
@@ -1632,13 +1637,19 @@ export const Editor: EditorInterface = {
     let [start, end] = Range.edges(range)
 
     // PERF: exit early if we can guarantee that the range isn't hanging.
-    if (start.offset !== 0 || end.offset !== 0 || Range.isCollapsed(range)) {
+    if (
+      start.offset !== 0 ||
+      end.offset !== 0 ||
+      Range.isCollapsed(range) ||
+      Path.hasPrevious(end.path)
+    ) {
       return range
     }
 
     const endBlock = Editor.above(editor, {
       at: end,
       match: n => Editor.isBlock(editor, n),
+      voids,
     })
     const blockPath = endBlock ? endBlock[1] : []
     const first = Editor.start(editor, start)
